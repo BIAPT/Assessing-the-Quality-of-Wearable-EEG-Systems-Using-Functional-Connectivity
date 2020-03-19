@@ -7,8 +7,8 @@
 %}
 
 %% General Parameters
-DATA_DIR = "/home/yacine/Documents/BIAPT/Assessing-the-Quality-of-Wearable-EEG-Systems-Using-Functional-Connectivity/data/";
-OUT_DIR = "/home/yacine/Documents/BIAPT/Assessing-the-Quality-of-Wearable-EEG-Systems-Using-Functional-Connectivity/result/";
+DATA_DIR = "/home/yacine/Documents/Assessing-the-Quality-of-Wearable-EEG-Systems-Using-Functional-Connectivity/data/";
+OUT_DIR = "/home/yacine/Documents/Assessing-the-Quality-of-Wearable-EEG-Systems-Using-Functional-Connectivity/result/";
 
 STATES = {'closed','open'};
 HEADSETS = {'egi','quick_30','dsi','open_bci','emotiv'};
