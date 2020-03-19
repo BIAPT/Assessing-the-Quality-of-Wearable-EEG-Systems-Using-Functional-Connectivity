@@ -77,8 +77,7 @@ for f = 1:length(FREQUENCIES)
             TD.BP = bandpass;
             result.td = na_topographic_distribution(recording, TD.window_size, ...
                                                     TD.step_size, TD.BP);
-
-
+                                                
             % Functional Connectivity
             PLI.BP = bandpass;
             result.wpli = na_wpli(recording, PLI.BP, PLI.WINDOW_SIZE, PLI.STEP_SIZE, ...
