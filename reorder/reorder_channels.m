@@ -1,10 +1,10 @@
-function [r_wpli, r_location, r_regions] = reorder_channels(wpli, location)
+function [r_wpli, r_location, r_regions] = reorder_channels(wpli, location,cassette)
 %REORDER CHANNELS take a wPLI matrix and a channels location struct and
 %reorder the channels (will also implicitly filter because it is using
 %scalp only channels file
     
     % Save the original directory and move to the other path
-    channel_order = readtable('biapt_egi129.csv');
+    channel_order = readtable(cassette);
     
     % Fetch the correct channels location information
     [num_location, labels, regions] = get_num_location(location, channel_order);

@@ -29,60 +29,149 @@ for f = 1:length(FREQUENCIES)
     frequency = FREQUENCIES{f};
     for h = 1:length(HEADSETS)
         headset = HEADSETS{h};
-        for s = 1:length(STATES)
-            state = STATES{s};
+        
+        % We are doing both the open and closed state at the same time to
+        % be able to normalize correctly across the matrices
 
-            filename = strcat(DATA_DIR,frequency, filesep, headset, "_", state, ".mat");
-            result = load(filename);
+        filename = strcat(DATA_DIR,frequency, filesep, headset, "_", "open", ".mat");
+        result_open = load(filename);
 
-            %% Spectrogram
-            sp = result.sp;
-
-            %% Power Topographic Map
-            %{
-            td = result.td;
-            power = td.data.power;
-            location = td.metadata.channels_location;
-
-            if strcmp(headset, "egi")
-                [power, location] = filter_channels(power, location);    
-            end
-            power_map_figure = topographic_map(power,location);
-            title(strcat(headset, " for ", state, " at ", frequency));
-            filename = strcat(OUT_DIR,frequency, filesep, headset, "_", state, "_topo.fig");
-            saveas(power_map_figure,filename,'fig')
-            close all; % to clear the figures that pops up
-            %}
+        filename = strcat(DATA_DIR,frequency, filesep, headset, "_", "closed", ".mat");
+        result_close = load(filename);
+        
+         %% Weighted Phase Lag Index
+        handle_wpli = make_figure_pli(result_open, result_close, headset, frequency, "wpli");
+        handle_dpli = make_figure_pli(result_open, result_close, headset, frequency, "dpli");
+        
+        
+        
             
-            %% Weighted Phase Lag Index
-            wpli = result.wpli;
-            avg_wpli = wpli.data.avg_wpli;
-            location = wpli.metadata.channels_location;
-            
-            if strcmp(headset, "egi")
-                [r_wpli, r_location, r_regions] = reorder_channels(avg_wpli, location);
-                
-            end
-        end
     end
 
 end
 
+function [handle] = make_figure_pli(result_open, result_close, headset, frequency, type)
+        switch type
+            case "wpli"
+                pli_open = result_open.wpli;
+                pli_close = result_close.wpli;
+                
+                if ~strcmp(headset, "egi")
+                    pli_down_open = result_open.down_sampled_wpli;
+                    pli_down_close = result_close.down_sampled_wpli;
+                end
+            case "dpli"
+                pli_open = result_open.dpli;
+                pli_close = result_close.dpli;
+                if ~strcmp(headset, "egi")
+                    pli_down_open = result_open.down_sampled_dpli;
+                    pli_down_close = result_close.down_sampled_dpli;
+                end
+        end
+
+        [p_pli_open, ~, p_regions_open] = process_pli(pli_open, headset, type);
+        [p_pli_close, ~, p_regions_close] = process_pli(pli_close, headset, type);
 
 
-function plot_wpli(data,type,labels)
-    figure;
-    imagesc(data);
-    xtickangle(90)
-    xticklabels(labels);
-    yticklabels(labels);  
-    xticks(1:length(labels));
-    yticks(1:length(labels));
-    colorbar;
+        if strcmp(headset, "egi")
+            p_pli_all = [p_pli_open(:); p_pli_close(:)];
+            handle = figure;
+            subplot(2,1,1)
+            plot_pli(p_pli_close,p_regions_close,p_pli_all)
+            title(strcat(headset, " for close at ", frequency, " for ", type));
+            colorbar;
+            subplot(2,1,2)
+            plot_pli(p_pli_open,p_regions_open,p_pli_all)
+            title(strcat(headset, " for open at ", frequency, " for ", type));
+            colorbar;
+            set(handle, 'Position', );
+        
+        else
+            [p_pli_down_open, ~, p_regions_down_open] = process_pli(pli_down_open, "egi", type);
+            [p_pli_down_close, ~, p_regions_down_close] = process_pli(pli_down_close, "egi", type);            
+            
+            p_pli_all = [p_pli_open(:); p_pli_close(:); p_pli_down_open(:); p_pli_down_close(:)];
+            
+            handle = figure;
+            subplot(2,2,1)
+            plot_pli(p_pli_down_close, p_regions_down_close, p_pli_all)
+            title(strcat("egi-", headset," downsampled for close at ", frequency, " for ", type));
+            subplot(2,2,2)
+            plot_pli(p_pli_close, p_regions_close, p_pli_all)
+            title(strcat(headset, " for close at ", frequency, " for ", type));
+            colorbar;
+            subplot(2,2,3)
+            plot_pli(p_pli_down_open, p_regions_down_open, p_pli_all)
+            title(strcat("egi-", headset," downsampled for open at ", frequency, " for ", type));
+            subplot(2,2,4)
+            plot_pli(p_pli_open, p_regions_open, p_pli_all)
+            title(strcat(headset, " for open at ", frequency, " for ", type));
+            colorbar;
+        end
 end
 
 
+function plot_pli(pli,regions,pli_all)
+    imagesc(pli);
+    xtickangle(90)
+    xticklabels(regions);
+    yticklabels(regions);  
+    xticks(1:length(regions));
+    yticks(1:length(regions));
+    min_color = min(pli_all);
+    max_color = max(pli_all);
+    caxis([min_color max_color])
+    colormap("jet");    
+end
 
+function [p_pli, p_location, p_regions] = process_pli(pli_struct, headset, type)
+        % Select the casset that will be used for the reordering /
+        % filtering of non-scalp electrodes
+        switch headset
+            case "egi"
+                cassette = "biapt_egi129.csv";
+            case "quick_30"
+                cassette = "biapt_quick_30.csv";
+            case "emotiv"
+                cassette = "biapt_quick_30.csv";
+            case "dsi"
+                cassette = "biapt_dsi24.csv";
+            case "open_bci"
+                cassette = "biapt_dsi24.csv";
+            otherwise
+                disp("Error wrong headset name");
+                return
+        end
+        
+        if strcmp(type, "wpli")
+            avg_pli = pli_struct.data.avg_wpli;            
+        else
+            avg_pli = pli_struct.data.avg_dpli;
+        end
+
+        location = pli_struct.metadata.channels_location;
+
+        % Filtering step where we take only the left handside
+        [avg_pli, location] = get_left_hemisphere(avg_pli, location);
+
+        [p_pli, p_location, p_regions] = reorder_channels(avg_pli, location, cassette);
+end
+
+
+function [f_pli, f_location] = get_left_hemisphere(pli, location)
+
+    % Make a mask for the left side
+    is_left = ([location.is_left] == 1);
+    f_pli = pli(is_left, is_left);
+
+    % Iterate over the location and get the left side of the brain
+    f_location = [];
+    for i = 1:length(location)
+        if location(i).is_left
+            f_location = [f_location, location(i)]; 
+        end
+    end
+end
 
 
 
