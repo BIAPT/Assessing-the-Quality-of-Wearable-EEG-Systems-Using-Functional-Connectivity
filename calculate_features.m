@@ -43,9 +43,9 @@ for f = 1:length(FREQUENCIES)
         case "alpha"
             bandpass = [8 13];
         case "beta"
-            bandpass = [14 30];
+            bandpass = [13 30];
         case "theta"
-            bandpass = [4 7];
+            bandpass = [4 8];
         case "delta"
             bandpass = [1 4];
         otherwise 
