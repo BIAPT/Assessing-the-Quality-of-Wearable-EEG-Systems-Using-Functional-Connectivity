@@ -41,10 +41,10 @@ for f = 1:length(FREQUENCIES)
         
          %% Weighted Phase Lag Index
         handle_wpli = make_figure_pli(result_open, result_close, headset, frequency, "wpli");
-        filename = strcat(OUT_DIR, frequency, filesep, headset, "_wpli.fig");
+        filename = strcat(OUT_DIR, frequency, filesep, headset, "_wpli.png");
         saveas(handle_wpli,filename);
         handle_dpli = make_figure_pli(result_open, result_close, headset, frequency, "dpli");
-        filename = strcat(OUT_DIR, frequency, filesep, headset, "_dpli.fig");
+        filename = strcat(OUT_DIR, frequency, filesep, headset, "_dpli.png");
         saveas(handle_dpli,filename);
         close all;
         
